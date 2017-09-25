@@ -1,0 +1,16 @@
+clear all; clc;
+
+n_agents = 10;
+n_neighbors = 3;
+
+if n_agents < n_neighbors 
+    disp('incorrect numbers of agents and neighbors.');
+    return;
+end;
+
+A = zeros(n_agents, n_agents; % incidence matrix
+for i = 1 : n_agents
+    Aline = zeros(1, n_agents);
+    round(rand * n_agents);
+    
+end;
