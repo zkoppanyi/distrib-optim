@@ -50,7 +50,7 @@ L = C*C';
 [~, S, ~] = svd(L);
 %diagS=S(S>1e-5);
 diagS = diag(S);
-alpha = 2 / (min(diagS) + max(diagS)); %htis probably wrong
+alpha = 2 / (min(diagS) + max(diagS)); %this probably wrong
 alpha = 0.1;
 W = eye(size(L,1), size(L,2)) - alpha*L;
 
@@ -75,10 +75,10 @@ for i = 1 : n_agents
                    W(i,i) = W(i,i) + max(0, 1/di-1/dk);
                end
            end
-       end;
+       end
        
-    end;
-end;
+    end
+end
 
 %check conditions
 W*ones(size(W,1), 1) 

@@ -1,7 +1,7 @@
 clear all; clc;
 
 n_agents = 10;
-n_neighbors = 4;
+n_neighbors = 5;
 type = 2;
 
 if type == 1
@@ -18,15 +18,14 @@ if type == 1
             n = floor(rand * n_agents)+1;
             if n == i,
                 continue;
-            end;
+            end
             %if A(i,n) == 0
                 A(i,n) = 1;
                 A(n,i) = 1;
                 k = k + 1;
             %end;
-        end;
-
-    end;
+        end
+    end
 
     % is the matrix symmetric?
     if (norm(abs(A')-abs(A)) ~=0)
@@ -39,10 +38,11 @@ if type == 1
 end
 
 if type == 2
+    step = 200; 
     sn = floor(sqrt(n_agents));
     coors = [];
     
-    step = 2;
+    % Regular network
     i = 1;
     for x = 0 : step : sn*step
         for y = 0 : step : sn*step
@@ -51,6 +51,9 @@ if type == 2
         end
     end
     n_agents = size(coors,1);
+    
+    % Random network
+    %coors = rand(n_agents, 2)*sn*step;    
     
     % create connections
     A = zeros(size(coors,1), size(coors,1));
@@ -62,8 +65,8 @@ if type == 2
         
         A(i, neigh_idx) = 1;
         A(neigh_idx, i) = 1;
-        meas = [meas; ones(length(idx), 1)*i neigh_idx  dist(idx)];
-        %meas = [meas; ones(length(idx), 1)*i neigh_idx  dist(idx) + normrnd(0,0.05)];
+        %meas = [meas; ones(length(idx), 1)*i neigh_idx  dist(idx)];
+        meas = [meas; ones(length(idx), 1)*i neigh_idx  dist(idx) + normrnd(0,1)];
     end
     di = logical(eye(size(A)));
     A(di) = 0;
@@ -91,7 +94,7 @@ if type == 2
     plot(G);
     
     % check the solution
-    f = @(x, y, x0, y0, r) sqrt((x-x0).^2 + (y-y0).^2) - r;
+    f = @(x, y, x0, y0, r) (x-x0).^2 + (y-y0).^2 - r.^2;
     norm(f(coors(meas(:,1), 1), coors(meas(:,1), 2), coors(meas(:,2), 1), coors(meas(:,2), 2), meas(:,3))) % has to be zero
     
 %     syms x y x0 y0 r
@@ -100,9 +103,10 @@ if type == 2
 %     diff(f(x, y, x0, y0, r), x0)
 %     diff(f(x, y, x0, y0, r), y0)
     
-    alpha = 0.2;
-    ycoors = coors'
-    x0_mat = (ycoors+normrnd(0, 0.1, 2, size(coors,1)));
+    %alpha = 0.2;
+    alpha = 3e-7;
+    ycoors = coors';
+    x0_mat = (ycoors+normrnd(0, 20, 2, size(coors,1)));
     %x0_mat = coors';
     %fix the last 2 points
     x0_mat(1:2, size(x0_mat, 2)) = ycoors(1:2, size(x0_mat, 2));
@@ -114,7 +118,7 @@ if type == 2
     
     x0 = x0_mat(:);
     x0i = x0(1:1:(size(x0_mat, 2)*2-4));
-    for l = 1 : 25
+    for l = 1 : 500
         
         % Build Jacobian
         J = zeros(size(meas,1), size(n_agents*4,1)-4);
@@ -126,22 +130,28 @@ if type == 2
             from_i = (idx_i-1)*2 + 1;
             from_j = (idx_j-1)*2 + 1;
 
-            r0 =  sqrt((x0(from_i)-x0(from_j)).^2 + (x0(from_i+1)-x0(from_j+1)).^2);
-            
-            J(k, from_i) = (x0(from_j) - x0(from_i)) / r0;
-            J(k, from_i+1) = (x0(from_j+1) - x0(from_i+1)) / r0;           
-            
-            J(k, from_j) = (x0(from_i) - x0(from_j)) / r0;
-            J(k, from_j+1) = (x0(from_i+1) - x0(from_j+1)) / r0;        
-            
-            r(k) = meas(k, 3)-r0;
+%             r0 =  sqrt((x0(from_i)-x0(from_j)).^2 + (x0(from_i+1)-x0(from_j+1)).^2);            
+%             J(k, from_i) = (x0(from_j) - x0(from_i)) / r0;
+%             J(k, from_i+1) = (x0(from_j+1) - x0(from_i+1)) / r0;                       
+%             J(k, from_j) = (x0(from_i) - x0(from_j)) / r0;
+%             J(k, from_j+1) = (x0(from_i+1) - x0(from_j+1)) / r0;                    
+%             r(k) = meas(k, 3)-r0;
+
+            r0 =  (x0(from_i)-x0(from_j)).^2 + (x0(from_i+1)-x0(from_j+1)).^2;            
+            J(k, from_i)   = (2*x0(from_j) - 2*x0(from_i));
+            J(k, from_i+1) = (2*x0(from_j+1) - 2*x0(from_i+1));                       
+            J(k, from_j)   = (2*x0(from_i) - 2*x0(from_j));
+            J(k, from_j+1) = (2*x0(from_i+1) - 2*x0(from_j+1));                    
+            r(k) = meas(k, 3)^2-r0;
+
         end
         from_i = (size(x0_mat, 2)-1)*2 + 1;
         J(:, from_i:(from_i+1)) = [];
         from_i = (size(x0_mat, 2)-2)*2 + 1;
         J(:, from_i:(from_i+1)) = [];
         
-        x0i = x0i - alpha*J'*r;
+        x0i = x0i - alpha*J'*r; % gradient
+        %x0i = x0i - inv(J'*J)*J'*r; % gauss-newton
         x0(1:(size(x0_mat, 2)*2-4)) = x0i(1:(size(x0_mat, 2)*2-4));
         %norm(J'*r)
         %norm(x0 - ycoors(:))
@@ -158,3 +168,23 @@ if type == 2
 end
 
 save('problem')
+
+
+% is graph biparite
+
+events = {'edgetonew', 'edgetodiscovered', 'edgetofinished'};
+T = bfsearch(G, 1, events, 'Restart', true);
+partitions = false(1, numnodes(G));
+is_bipart = true;
+
+for ii=1:size(T, 1)   
+    if T.Event(ii) == 'edgetonew'
+        partitions(T.Edge(ii, 2)) = ~partitions(T.Edge(ii, 1));
+    else
+        if partitions(T.Edge(ii, 1)) == partitions(T.Edge(ii, 2))
+            is_bipart = false;
+            break;
+        end
+    end
+end
+is_bipart
