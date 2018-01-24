@@ -1,4 +1,4 @@
-% Single and multstep gradient methods for quadratic problem 
+% Weighted Gradient Method for UWB network optimization
 % paper: [1] Accelerated Gradient Methods for Networked Optimizaiton,
 % https://arxiv.org/pdf/1211.2132.pdf, Page 14
 
@@ -6,7 +6,7 @@ clear all; clc;
 
 load('problem')
 
-x0_mat = (ycoors+normrnd(0, 10, 2, size(coors,1)));
+x0_mat = (ycoors+normrnd(0, 30, 2, size(coors,1)));
 %x0_mat = coors';
 %fix the last 2 points
 x0_mat(1:2, size(x0_mat, 2)) = ycoors(1:2, size(x0_mat, 2));
@@ -16,74 +16,74 @@ x0 = x0r;
 x0i = x0(1:1:(size(x0_mat, 2)*2-4));
 
 %% 1. Using direct formula: Metropolis-Hastings
-% Graph is not biparite
-Au = abs(A);
-W = zeros(2*n_agents, 2*n_agents);
-for i = 1 : n_agents
-    di = sum(Au(i,:));    
-    for j = 1 : n_agents
-       if i ~= j
-           if Au(i,j) == 1
-               dj = sum(Au(j,:));  
-               W( (i-1)*2+1, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+1, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+2, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+2, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-           else
-               W( (i-1)*2+1, (j-1)*2+1) = 0;
-               W( (i-1)*2+1, (j-1)*2+2) = 0;
-               W( (i-1)*2+2, (j-1)*2+1) = 0;
-               W( (i-1)*2+2, (j-1)*2+2) = 0;
-           end
-       else
-           for k = 1 : n_agents
-               if Au(i,k) == 1
-                   dk = sum(Au(k,:));  
-                   %W(i,i) = W(i,i) + max(0, 1/di-1/dk);
-                   W( (i-1)*2+1, (i-1)*2+1) = W( (i-1)*2+1, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+1, (i-1)*2+2) = W( (i-1)*2+1, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+2, (i-1)*2+1) = W( (i-1)*2+2, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+2, (i-1)*2+2) = W( (i-1)*2+2, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-               end
-           end
-       end
-       
-    end
-end
-W3 = W;
-
-%% 2. Using Laplacian 
-% % Create graph Laplacian
+% % Graph is not biparite
 % Au = abs(A);
-% C = zeros(n_agents*2, n_agents*2);
+% W = zeros(2*n_agents, 2*n_agents);
 % for i = 1 : n_agents
-%     for j = (i+1) : n_agents
-%         if Au(i,j) == 1
-%             col = zeros(n_agents*2, 1);
-%             col((i-1)*2+1) = 1;
-%             col((i-1)*2+2) = 1;
-%             col((j-1)*2+1) = -1;
-%             col((j-1)*2+2) = -1;
-%             C = [C, col];
-%         end
+%     di = sum(Au(i,:));    
+%     for j = 1 : n_agents
+%        if i ~= j
+%            if Au(i,j) == 1
+%                dj = sum(Au(j,:));  
+%                W( (i-1)*2+1, (j-1)*2+1) = min(1/di, 1/dj) / 2;
+%                W( (i-1)*2+1, (j-1)*2+2) = min(1/di, 1/dj) / 2;
+%                W( (i-1)*2+2, (j-1)*2+1) = min(1/di, 1/dj) / 2;
+%                W( (i-1)*2+2, (j-1)*2+2) = min(1/di, 1/dj) / 2;
+%            else
+%                W( (i-1)*2+1, (j-1)*2+1) = 0;
+%                W( (i-1)*2+1, (j-1)*2+2) = 0;
+%                W( (i-1)*2+2, (j-1)*2+1) = 0;
+%                W( (i-1)*2+2, (j-1)*2+2) = 0;
+%            end
+%        else
+%            for k = 1 : n_agents
+%                if Au(i,k) == 1
+%                    dk = sum(Au(k,:));  
+%                    %W(i,i) = W(i,i) + max(0, 1/di-1/dk);
+%                    W( (i-1)*2+1, (i-1)*2+1) = W( (i-1)*2+1, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
+%                    W( (i-1)*2+1, (i-1)*2+2) = W( (i-1)*2+1, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
+%                    W( (i-1)*2+2, (i-1)*2+1) = W( (i-1)*2+2, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
+%                    W( (i-1)*2+2, (i-1)*2+2) = W( (i-1)*2+2, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
+%                end
+%            end
+%        end
+%        
 %     end
 % end
-% 
-% L = C*C';
-% 
-% n = 2*max(diag(L)); % max deg.
-% epsilon = 1/n/2;
-% 
-% %n = sum(diag(L)); 
-% %epsilon = 1/n;
-% 
-% epsilon = 0.000001;
-% W = eye(size(L,1)) - epsilon*L; % weight matrix as graph's laplacian
-% 
-% Wt = W;
-% for k = 1 : 100
-%     Wt = Wt * Wt;
-% end
+% W3 = W;
+
+%% 2. Using Laplacian 
+% Create graph Laplacian
+Au = abs(A);
+C = zeros(n_agents*2, n_agents*2);
+for i = 1 : n_agents
+    for j = (i+1) : n_agents
+        if Au(i,j) == 1
+            col = zeros(n_agents*2, 1);
+            col((i-1)*2+1) = 1;
+            col((i-1)*2+2) = 1;
+            col((j-1)*2+1) = -1;
+            col((j-1)*2+2) = -1;
+            C = [C, col];
+        end
+    end
+end
+
+L = C*C';
+
+n = 2*max(diag(L)); % max deg.
+epsilon = 1/n/2;
+
+%n = sum(diag(L)); 
+%epsilon = 1/n;
+
+epsilon = 1e-6;
+W = eye(size(L,1)) - epsilon*L; % weight matrix as graph's laplacian
+
+Wt = W;
+for k = 1 : 100
+    Wt = Wt * Wt;
+end
 
 
 %% 4. Minimization
@@ -117,8 +117,8 @@ iters_coors = [];
 n_params = size(x0, 1)-4;
 %n_params = size(x0, 1);
 x0i = [];
-x0i= [x0i, x0(1:n_params)];
-x0i= [x0i, x0(1:n_params)];
+x0i = [x0i, x0(1:n_params)];
+x0i = [x0i, x0(1:n_params)];
 for k1 = 2 : 600
 
     % Build Jacobian
@@ -212,5 +212,6 @@ plot(x0_mat(1,:), x0_mat(2,:), 'b+', 'MarkerSize', 4);
 title('Solution');
 set(gca, 'FontSize', 14); xlabel('X'); ylabel('Y');
 grid on;
+axis equal;
 
     
