@@ -167,6 +167,8 @@ if type == 2
     plot(x0n(:,1), x0n(:,2), 'bo');
 end
 
+sol = x0n;
+clear x0n;
 save('problem')
 
 
