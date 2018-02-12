@@ -6,7 +6,8 @@ clear all; clc;
 
 load('problem')
 
-x0_mat = (ycoors+normrnd(0, 30, 2, size(coors,1)));
+x0_mat = (sol'+normrnd(0, 40, 2, size(coors,1)));
+
 %x0_mat = coors';
 %fix the last 2 points
 x0_mat(1:2, size(x0_mat, 2)) = ycoors(1:2, size(x0_mat, 2));
@@ -16,43 +17,42 @@ x0 = x0r;
 x0i = x0(1:1:(size(x0_mat, 2)*2-4));
 
 %% 1. Using direct formula: Metropolis-Hastings
-% % Graph is not biparite
-% Au = abs(A);
-% W = zeros(2*n_agents, 2*n_agents);
-% for i = 1 : n_agents
-%     di = sum(Au(i,:));    
-%     for j = 1 : n_agents
-%        if i ~= j
-%            if Au(i,j) == 1
-%                dj = sum(Au(j,:));  
-%                W( (i-1)*2+1, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-%                W( (i-1)*2+1, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-%                W( (i-1)*2+2, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-%                W( (i-1)*2+2, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-%            else
-%                W( (i-1)*2+1, (j-1)*2+1) = 0;
-%                W( (i-1)*2+1, (j-1)*2+2) = 0;
-%                W( (i-1)*2+2, (j-1)*2+1) = 0;
-%                W( (i-1)*2+2, (j-1)*2+2) = 0;
-%            end
-%        else
-%            for k = 1 : n_agents
-%                if Au(i,k) == 1
-%                    dk = sum(Au(k,:));  
-%                    %W(i,i) = W(i,i) + max(0, 1/di-1/dk);
-%                    W( (i-1)*2+1, (i-1)*2+1) = W( (i-1)*2+1, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-%                    W( (i-1)*2+1, (i-1)*2+2) = W( (i-1)*2+1, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-%                    W( (i-1)*2+2, (i-1)*2+1) = W( (i-1)*2+2, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-%                    W( (i-1)*2+2, (i-1)*2+2) = W( (i-1)*2+2, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-%                end
-%            end
-%        end
-%        
-%     end
-% end
-% W3 = W;
+% Graph is not biparite
+Au = abs(A);
+W = zeros(2*n_agents, 2*n_agents);
+for i = 1 : n_agents
+    di = sum(Au(i,:));      
+    for j = 1 : n_agents
+       if i ~= j
+           if Au(i,j) == 1
+               dj = sum(Au(j,:));  
+               W( (i-1)*2+1, (j-1)*2+1) = min(1/di, 1/dj) / 2;
+               W( (i-1)*2+1, (j-1)*2+2) = min(1/di, 1/dj) / 2;
+               W( (i-1)*2+2, (j-1)*2+1) = min(1/di, 1/dj) / 2;
+               W( (i-1)*2+2, (j-1)*2+2) = min(1/di, 1/dj) / 2;
+           else
+               W( (i-1)*2+1, (j-1)*2+1) = 0;
+               W( (i-1)*2+1, (j-1)*2+2) = 0;
+               W( (i-1)*2+2, (j-1)*2+1) = 0;
+               W( (i-1)*2+2, (j-1)*2+2) = 0;
+           end
+       else
+           for k = 1 : n_agents
+               if Au(i,k) == 1
+                   dk = sum(Au(k,:));  
+                   %W(i,i) = W(i,i) + max(0, 1/di-1/dk);
+                   W( (i-1)*2+1, (i-1)*2+1) = W( (i-1)*2+1, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
+                   W( (i-1)*2+1, (i-1)*2+2) = W( (i-1)*2+1, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
+                   W( (i-1)*2+2, (i-1)*2+1) = W( (i-1)*2+2, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
+                   W( (i-1)*2+2, (i-1)*2+2) = W( (i-1)*2+2, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
+               end
+           end
+       end
+       
+    end
+end
 
-%% 2. Using Laplacian 
+%% 2. Using Laplacian
 % Create graph Laplacian
 Au = abs(A);
 C = zeros(n_agents*2, n_agents*2);
@@ -73,11 +73,12 @@ L = C*C';
 
 n = 2*max(diag(L)); % max deg.
 epsilon = 1/n/2;
+epsilon = epsilon / 2;
 
 %n = sum(diag(L)); 
 %epsilon = 1/n;
 
-epsilon = 1e-6;
+%epsilon = 1e-9;
 W = eye(size(L,1)) - epsilon*L; % weight matrix as graph's laplacian
 
 Wt = W;
@@ -119,6 +120,7 @@ n_params = size(x0, 1)-4;
 x0i = [];
 x0i = [x0i, x0(1:n_params)];
 x0i = [x0i, x0(1:n_params)];
+dit = [];
 for k1 = 2 : 600
 
     % Build Jacobian
@@ -169,15 +171,19 @@ for k1 = 2 : 600
     
     
     % Accelerated version
-    %alpha = 0.003; beta = 0.1;
-    H = J'*J;
-    lams = eig(W2*H);
-    lams = lams(lams~=0); % remove zero eigens
-    min_lam = min(lams);
-    max_lam = max(lams);
-    alpha = (2 / (sqrt(max_lam) + sqrt(min_lam)) )^2;
-    beta = ( (sqrt(max_lam) - sqrt(min_lam)) / (sqrt(max_lam) + sqrt(min_lam)) )^2; %optimal parameters
+    if k1 == 2
+        %alpha = 0.003; beta = 0.1;
+        H = J'*J;
+        lams = eig(W2*H);
+        lams = lams(lams~=0); % remove zero eigens
+        min_lam = min(lams);
+        max_lam = max(lams);
+        alpha = (2 / (sqrt(max_lam) + sqrt(min_lam)) )^2 /10;
+        beta = ( (sqrt(max_lam) - sqrt(min_lam)) / (sqrt(max_lam) + sqrt(min_lam)) )^2 / 10; %optimal parameters
+    end
     
+    alpha = 8e-7;
+    beta = 1e-1;
     x0i(:, k1+1) = x0i(:, k1) - alpha * W2 * J'*r + beta*(x0i(:, k1) - x0i(:, k1-1));
 
     % Simple version
@@ -188,30 +194,62 @@ for k1 = 2 : 600
     x0n = [x0(1:2:length(x0)), x0(2:2:length(x0))];
     
     % Errors
-    dx = x0n-coors;
+    dx = x0n - coors;
     iters_dx = [iters_dx, dx(:)];
     iters_coors = [iters_coors; x0n'];
     norm(f(x0n(meas(:,1), 1), x0n(meas(:,1), 2), x0n(meas(:,2), 1), x0n(meas(:,2), 2), meas(:,3)));
+        
+    r = obj_fn(x0, chk_prob.x0, meas, chk_prob.cont_agents);    
+    dit =[dit, ((norm(r) / chk_prob.res) - 1)*100]; 
+    %dit =[dit, n2]; 
+    %if ( abs(n2-n1)/n1*100 < 0.5 )
+    %    %break;
+    %end
 end
 
 
 figure(1); clf; hold on;
-plot(iters_dx');
-title('Convergence of the parameters');
-xlabel('Iterations [-]'); ylabel('Residuals');
+yyaxis right
+plot(dit', 'LineWidth', 3);
+ylabel('(norm(r)-norm(r^*))/norm(r^*) [%]');
+idx = find(abs(diff(dit)) < 0.01);
+if ~isempty(idx)
+    plot([idx(1) idx(1)], [0 max(dit)], 'r--', 'LineWidth', 2);
+end
+dit(idx(1));
+txt = sprintf('#%i, %.1f%%', idx(1), dit(idx(1)))
+text(idx(1)+10, dit(idx(1))+50, txt,'FontSize',14,'Color','red');
+xlabel('Iterations [-]'); 
+set(gca, 'FontSize', 14);
+
+yyaxis left
+plot(iters_dx', '-');
+ylabel('Residuals');
+xlabel('Iterations [-]'); 
 set(gca, 'FontSize', 14);
 
 figure(2); clf; hold on;
-plot(x0n(:,1), x0n(:,2), 'ro');
-plot(coors(:,1), coors(:,2), 'r.', 'MarkerSize', 10);
+plot(coors(:,1), coors(:,2), 'r.', 'MarkerSize', 15);
+for i = 1 : size(A,1)
+        for j = 1 : size(A,1)
+            if A(i, j) == 1
+                 plot([coors(i,1) coors(j,1)], [coors(i,2) coors(j,2)], 'r-');
+            end
+            
+        end
+end
+plot(x0n(:,1), x0n(:,2), 'b.');
+plot(x0n(:,1), x0n(:,2), 'bo');
+    
 plot(x0_mat(1,:), x0_mat(2,:), 'b+', 'MarkerSize', 4);
 % for k = 1 : 2 : size(iters_coors, 1)
 %     lin = iters_coors([k k+1],:)';
 %     plot(lin(1,1), lin(1,2), 'b+', 'MarkerSize', 4);
 % end
-title('Solution');
+%title('Solution');
 set(gca, 'FontSize', 14); xlabel('X'); ylabel('Y');
 grid on;
 axis equal;
+xlim(xlima); ylim(ylima);
 
     

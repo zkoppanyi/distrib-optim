@@ -6,7 +6,6 @@ clear all; clc;
 
 load('problem')
 
-x0_mat = (ycoors+normrnd(0, 30, 2, size(coors,1)));
 %x0_mat = coors';
 %fix the last 2 points
 x0_mat(1:2, size(x0_mat, 2)) = ycoors(1:2, size(x0_mat, 2));
@@ -55,7 +54,7 @@ end
 % %diagS=S(S>1e-5);
 % diagS = diag(S);
 % %alpha = 2 / (min(diagS) + max(diagS)); %this probably wrong
-% alpha = 0.01;
+% alpha = 1e-2;
 % W = eye(size(L,1), size(L,2)) - alpha*L;
 
 % Metropolis-Hastings
@@ -102,8 +101,10 @@ n_params = size(x0, 1);
 x0i = [];
 x0i= [x0i, x0(1:n_params)];
 x0i= [x0i, x0(1:n_params)];
-for k1 = 2 : 300
-
+dit = [];
+for k1 = 2 : 600
+    fprintf("iter: %i\n", k1);
+    
     % Build Jacobian
     u = [];
     for i = 1 : n_agents
@@ -141,9 +142,9 @@ for k1 = 2 : 300
             from_i = (size(x0_mat, 2)-2)*2 + 1; % last but one
             J(:, from_i:(from_i+1)) = [];
 
-            alpha = 1e-6;
-            %dx = alpha * J'*r;
-            dx = pinv(J'*J)*J'*r;
+            alpha = 1e-4;
+            dx = alpha * J'*r;
+            %dx = pinv(J'*J)*J'*r;
             x0l(1:(n_params-4)) = x0l(1:(n_params-4)) - dx;  
         %end
         
@@ -154,8 +155,8 @@ for k1 = 2 : 300
     u0 = u';
     prev_u = Inf;
     ci = 0;
-    %while max(std(u0, [], 2)) > 10e-3
-    while max(max(prev_u-u)) > 10e-9
+    %while max(std(u0, [], 2)) > 1e-3
+    while max(max(prev_u-u)) > 1e-3
        prev_u = u;
        u = W*u;
        ci = ci+1;
@@ -173,26 +174,62 @@ for k1 = 2 : 300
     %iters_dx = [iters_dx, u0];
     iters_coors = [iters_coors; x0n'];
 
+    if k1 == 2
+        n0 = norm(x0n(:) - coors(:));
+    end
+    
+    r = obj_fn(x0i(:, end), chk_prob.x0, meas, chk_prob.cont_agents);    
+    dit =[dit, ((norm(r) / chk_prob.res) - 1)*100]; 
+    
+    fprintf('res: %.2f\n', ((norm(r) / chk_prob.res) - 1)*100)
+        
 end
 
 
+
 figure(1); clf; hold on;
-plot(iters_dx');
-title('Convergence of the parameters');
-xlabel('Iterations [-]'); ylabel('Residuals');
+yyaxis right
+plot(dit', 'LineWidth', 3);
+ylabel('(norm(r)-norm(r^*))/norm(r^*) [%]');
+idx = find(abs(diff(dit)) < 0.01);
+if ~isempty(idx)
+    plot([idx(1) idx(1)], [0 max(dit)], 'r--', 'LineWidth', 2);
+end
+dit(idx(1));
+txt = sprintf('#%i, %.1f%%', idx(1), dit(idx(1)))
+text(idx(1)+10, dit(idx(1))+50, txt,'FontSize',14,'Color','red');
+xlabel('Iterations [-]'); 
+set(gca, 'FontSize', 14);
+
+yyaxis left
+plot(iters_dx', '-');
+ylabel('Residuals');
+xlabel('Iterations [-]'); 
 set(gca, 'FontSize', 14);
 
 figure(2); clf; hold on;
-plot(x0n(:,1), x0n(:,2), 'ro');
-plot(coors(:,1), coors(:,2), 'r.', 'MarkerSize', 10);
+plot(coors(:,1), coors(:,2), 'r.', 'MarkerSize', 15);
+for i = 1 : size(A,1)
+        for j = 1 : size(A,1)
+            if A(i, j) == 1
+                 plot([coors(i,1) coors(j,1)], [coors(i,2) coors(j,2)], 'r-');
+            end
+            
+        end
+end
+plot(x0n(:,1), x0n(:,2), 'b.');
+plot(x0n(:,1), x0n(:,2), 'bo');
+
+
 plot(x0_mat(1,:), x0_mat(2,:), 'b+', 'MarkerSize', 4);
 % for k = 1 : 2 : size(iters_coors, 1)
 %     lin = iters_coors([k k+1],:)';
 %     plot(lin(1,1), lin(1,2), 'b+', 'MarkerSize', 4);
 % end
-title('Solution');
+%title('Solution');
 set(gca, 'FontSize', 14); xlabel('X'); ylabel('Y');
 grid on;
 axis equal;
+xlim(xlima); ylim(ylima);
 
     
