@@ -16,47 +16,6 @@ x0i = x0(1:1:(size(x0_mat, 2)*2-4));
     
 iters = [];
 
-% 1. Using direct formula
-Au = abs(A);
-W1 = zeros(n_agents, n_agents);
-alpha = 0.1;
-for i = 1 : n_agents
-    for j = 1 : n_agents
-        if i == j
-            d = sum(Au(i,:));
-            W1(i,j) = 1 - d*alpha;
-            continue;
-        end
-        if Au(i,j) == 1
-            W1(i, j) = alpha;
-        else
-            W1(i,j) = 0;
-        end
-    end
-end
-
-% 2. Using Laplacian 
-% Au = abs(A);
-% C = [];
-% for i = 1 : n_agents
-%     for j = (i+1) : n_agents
-%         if Au(i,j) == 1
-%             col = zeros(n_agents, 1);
-%             col(i) = 1;
-%             col(j) = -1;
-%             C = [C, col];
-%         end
-%     end
-% end
-% L = C*C';
-% 
-% [~, S, ~] = svd(L);
-% %diagS=S(S>1e-5);
-% diagS = diag(S);
-% %alpha = 2 / (min(diagS) + max(diagS)); %this probably wrong
-% alpha = 1e-2;
-% W = eye(size(L,1), size(L,2)) - alpha*L;
-
 % Metropolis-Hastings
 Au = abs(A);
 W = zeros(n_agents, n_agents);

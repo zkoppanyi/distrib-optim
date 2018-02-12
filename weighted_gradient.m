@@ -16,43 +16,7 @@ x0r = x0_mat(:);
 x0 = x0r;
 x0i = x0(1:1:(size(x0_mat, 2)*2-4));
 
-%% 1. Using direct formula: Metropolis-Hastings
-% Graph is not biparite
-Au = abs(A);
-W = zeros(2*n_agents, 2*n_agents);
-for i = 1 : n_agents
-    di = sum(Au(i,:));      
-    for j = 1 : n_agents
-       if i ~= j
-           if Au(i,j) == 1
-               dj = sum(Au(j,:));  
-               W( (i-1)*2+1, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+1, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+2, (j-1)*2+1) = min(1/di, 1/dj) / 2;
-               W( (i-1)*2+2, (j-1)*2+2) = min(1/di, 1/dj) / 2;
-           else
-               W( (i-1)*2+1, (j-1)*2+1) = 0;
-               W( (i-1)*2+1, (j-1)*2+2) = 0;
-               W( (i-1)*2+2, (j-1)*2+1) = 0;
-               W( (i-1)*2+2, (j-1)*2+2) = 0;
-           end
-       else
-           for k = 1 : n_agents
-               if Au(i,k) == 1
-                   dk = sum(Au(k,:));  
-                   %W(i,i) = W(i,i) + max(0, 1/di-1/dk);
-                   W( (i-1)*2+1, (i-1)*2+1) = W( (i-1)*2+1, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+1, (i-1)*2+2) = W( (i-1)*2+1, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+2, (i-1)*2+1) = W( (i-1)*2+2, (i-1)*2+1) + max(0, 1/di-1/dk) / 2;
-                   W( (i-1)*2+2, (i-1)*2+2) = W( (i-1)*2+2, (i-1)*2+2) + max(0, 1/di-1/dk) / 2;
-               end
-           end
-       end
-       
-    end
-end
-
-%% 2. Using Laplacian
+%% Using Laplacian
 % Create graph Laplacian
 Au = abs(A);
 C = zeros(n_agents*2, n_agents*2);
